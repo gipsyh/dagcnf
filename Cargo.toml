@@ -6,3 +6,5 @@ authors = ["Yuheng Su <gipsyh.icu@gmail.com>"]
 repository = "https://github.com/gipsyh/rIC3"
 
 [dependencies]
+logic-form = { path = "../logic-form", version = "0.3.0" }
+giputils = { path = "../giputils", version = "0.2.9" }
