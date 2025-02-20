@@ -4,7 +4,7 @@ use giputils::{
     hash::GHashSet,
     heap::{BinaryHeap, BinaryHeapCmp},
 };
-use logic_form::{LitVec, Var, VarMap};
+use logic_form::{LitVec, LitVvec, Var, VarMap};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 
 struct Out(VarMap<GHashSet<Var>>);
@@ -63,7 +63,9 @@ impl DagCnfSimplify {
         let mut cnf: VarMap<Vec<_>> = VarMap::new_with(max_var);
         for v in Var::CONST..=max_var {
             for cls in dagcnf.cnf[v].iter() {
-                cnf[v].push(Grc::new(cls.clone()));
+                let mut cls = cls.clone();
+                cls.sort();
+                cnf[v].push(Grc::new(cls));
             }
         }
         let mut dep: VarMap<GHashSet<_>> = VarMap::new_with(max_var);
@@ -162,6 +164,11 @@ impl DagCnfSimplify {
                 return;
             }
             res0.extend(res1);
+            let o = res0.len();
+            res0.subsume_simplify();
+            if res0.len() < o {
+                ncost -= o - res0.len();
+            }
             res.push(res0);
         }
         for (&o, rel) in out.iter().zip(res) {
@@ -193,11 +200,11 @@ impl DagCnfSimplify {
     }
 }
 
-fn resolvent(pcnf: &[Grc<LitVec>], ncnf: &[Grc<LitVec>], pivot: Var) -> Vec<LitVec> {
-    let mut res = Vec::new();
+fn resolvent(pcnf: &[Grc<LitVec>], ncnf: &[Grc<LitVec>], pivot: Var) -> LitVvec {
+    let mut res = LitVvec::new();
     for pcls in pcnf.iter() {
         for ncls in ncnf.iter() {
-            if let Some(resolvent) = pcls.resolvent(ncls, pivot) {
+            if let Some(resolvent) = pcls.ordered_resolvent(ncls, pivot) {
                 res.push(resolvent);
             }
         }
